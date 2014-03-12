@@ -1,0 +1,12 @@
+*.swp
+*.swo
+*.orig
+target
+.idea
+*.iml
+*.ipr
+*.iws
+*.jar
+*.class
+.lein-*
+.nrepl-port
