@@ -1,0 +1,9 @@
+#!/bin/bash
+# Drop and recreate the db and initial data
+MY_DIR=$(dirname $0)
+
+dropdb -U postgres lists
+createdb -U postgres lists
+psql -U postgres lists -f $MY_DIR/schema/lists.sql
+#psql -U postgres lists -f $MY_DIR/schema/initial-data.sql
+

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Run this to ensure project deps have been installed in local repo.
+MY_DIR=$(dirname $0)
+ROOT=$(readlink -m "$MY_DIR/..")
+
+cd $ROOT
+(cd clj-log && lein install)
+(cd clj-test-common && lein install)
+
