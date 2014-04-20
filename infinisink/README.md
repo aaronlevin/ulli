@@ -48,5 +48,5 @@ The payload of each event will be:
 
 ## REST Api
 
-`POST /:version/sink`
-`POST /:version/:medium/:user`
+- `POST /:version/sink`
+- `POST /:version/:medium/:user`
