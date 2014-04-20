@@ -10,6 +10,14 @@ The idea behind **infinisink** is to have a sink to send simple data to. The sin
 - facebook (mention)
 - bookmarking
 
+## Build Instructions
+
+    cabal sandbox init
+    cabal configure
+    cabal install
+    cabal build
+    cabal run
+
 ## Medium endpoints
 
 1. **Twitter**: `@ulli` or `@infinisink`
