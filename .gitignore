@@ -1,5 +1,6 @@
 *.swp
 *.swo
+*.un~
 *.orig
 target
 .idea
@@ -10,3 +11,5 @@ target
 *.class
 .lein-*
 .nrepl-port
+infinisink/dist/*
+infinisink/.cabal-sandbox/**
