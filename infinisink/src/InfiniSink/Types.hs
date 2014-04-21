@@ -50,6 +50,7 @@ data SinkMessage = SinkMessage { getMedium :: Medium
                                , getMessage :: Text
                                , getPayload :: Maybe Text
                                , getUser :: Text
+                               , getTimestamp :: Integer
                                } deriving (Show, Eq, Ord)
 
 instance FromJSON SinkMessage where
@@ -57,16 +58,19 @@ instance FromJSON SinkMessage where
                             v .: "medium" <*>
                             v .: "msg" <*>
                             v .:? "payload" <*>
-                            v .: "user"
+                            v .: "user" <*>
+                            v .: "timestamp"
     parseJSON _          = mzero
 
 instance ToJSON SinkMessage where
-    toJSON (SinkMessage medium msg (Just payload) user) = object [ "medium" .= medium
-                                                                 , "msg" .= msg
-                                                                 , "payload" .= payload
-                                                                 , "user" .= user
-                                                                 ]
-    toJSON (SinkMessage medium msg Nothing user)        = object [ "medium" .= medium
-                                                                 , "msg" .= msg
-                                                                 , "user" .= user
-                                                                 ]
+    toJSON (SinkMessage medium msg (Just payload) user ts) = object [ "medium" .= medium
+                                                                    , "msg" .= msg
+                                                                    , "payload" .= payload
+                                                                    , "user" .= user
+                                                                    , "timestamp" .= ts
+                                                                    ]
+    toJSON (SinkMessage medium msg Nothing user ts)        = object [ "medium" .= medium
+                                                                    , "msg" .= msg
+                                                                    , "user" .= user
+                                                                    , "timestamp" .= ts
+                                                                    ]

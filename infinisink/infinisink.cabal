@@ -80,6 +80,7 @@ executable infinisink-api
                , uuid
                , bytestring >=0.10.0
                , postgresql-simple
+               , old-locale
 
   -- Directories containing source files.
   hs-source-dirs: src
