@@ -31,7 +31,7 @@ processMsgLoop chan = forever $ do
 main :: IO()
 main = do
     scotty 3000 $ do
-        workChannel <- lift (newChan :: IO (Chan SinkMessage))
+        workChannel <- lift newChan
         lift . forkIO $ processMsgLoop workChannel
         middleware logStdoutDev
 
