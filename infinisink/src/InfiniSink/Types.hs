@@ -2,6 +2,7 @@
 
 module InfiniSink.Types ( Medium (..)
              , SinkMessage (..)
+             , toMedium
              ) where
 
 import Control.Applicative ((<*>), (<$>))
@@ -39,6 +40,15 @@ instance ToJSON Medium where
     toJSON REST     = A.String "rest"
     toJSON SMS      = A.String "sms"
     toJSON Bookmark = A.String "bookmark"
+
+toMedium :: Text -> Maybe Medium
+toMedium "twitter"      = Just Twitter
+toMedium "email"        = Just Email
+toMedium "facebooke"    = Just Facebook
+toMedium "rest"         = Just REST
+toMedium "sms"          = Just SMS
+toMedium "bookmark"     = Just Bookmark
+toMedium _              = Nothing
 
 {-|A message received by InfiniSink. Messages received at the sink have three required fields and one optional:
 1. medium: the medium through which the message came

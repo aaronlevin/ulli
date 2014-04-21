@@ -17,7 +17,7 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Text.Encoding (decodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format (formatTime)
-import InfiniSink.Types (Medium, SinkMessage (SinkMessage))
+import InfiniSink.Types (Medium, SinkMessage (SinkMessage), toMedium)
 import Network.HTTP.Types (status400, status409)
 import Network.Wai.Middleware.RequestLogger
 import System.Locale (defaultTimeLocale)
@@ -31,7 +31,7 @@ processMsgLoop chan = forever $ do
 main :: IO()
 main = do
     scotty 3000 $ do
-        workChannel <- lift (newChan :: IO (Chan SinkMessage))
+        workChannel <- lift newChan
         lift . forkIO $ processMsgLoop workChannel
         middleware logStdoutDev
 
@@ -50,7 +50,7 @@ main = do
             let user = decodeUtf8 userBytes
             let message = toStrict $ TLE.decodeUtf8 payload
             currentTime <- liftIO $ read <$> formatTime defaultTimeLocale "%s" <$> getCurrentTime
-            -- process payload then put on channel
-            case (decode $ fromStrict mediumBytes) of
+
+            case (toMedium mediumBytes) of
                 Just med -> liftIO $ writeChan workChannel (SinkMessage med message Nothing user currentTime)
                 Nothing -> status status400
