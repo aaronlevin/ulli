@@ -31,6 +31,7 @@ The idea behind **infinisink** is to have a sink to send simple data to. The sin
 The payload of each event will be:
 
     {
+        "sink": "ulli",
         "medium": "twitter",
         "msg": "empty inbox",
         "payload": "(optional) i meant the email inbox",
@@ -49,4 +50,4 @@ The payload of each event will be:
 ## REST Api
 
 - `POST /:version/sink`
-- `POST /:version/:medium/:user`
+- `POST /:version/sink/:sink/:medium/:user`

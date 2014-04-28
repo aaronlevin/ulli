@@ -51,12 +51,14 @@ toMedium "bookmark"     = Just Bookmark
 toMedium _              = Nothing
 
 {-|A message received by InfiniSink. Messages received at the sink have three required fields and one optional:
-1. medium: the medium through which the message came
-2. message: the actual 'message'
-3. payload: an optional payload of other data. Some mediums all for this, e.g. 'email'
-4. user: the user that sent the message
+1. sink: we scope a sink message by a 'sink'. Most of the time this will be 'ulli', but if we productize this it could be another user.
+2. medium: the medium through which the message came
+3. message: the actual 'message'
+4. payload: an optional payload of other data. Some mediums all for this, e.g. 'email'
+5. user: the user that sent the message
 -}
-data SinkMessage = SinkMessage { getMedium :: Medium
+data SinkMessage = SinkMessage { getSink :: Text
+                               , getMedium :: Medium
                                , getMessage :: Text
                                , getPayload :: Maybe Text
                                , getUser :: Text
@@ -65,6 +67,7 @@ data SinkMessage = SinkMessage { getMedium :: Medium
 
 instance FromJSON SinkMessage where
     parseJSON (Object v) = SinkMessage <$>
+                            v .: "sink" <*>
                             v .: "medium" <*>
                             v .: "msg" <*>
                             v .:? "payload" <*>
@@ -73,14 +76,16 @@ instance FromJSON SinkMessage where
     parseJSON _          = mzero
 
 instance ToJSON SinkMessage where
-    toJSON (SinkMessage medium msg (Just payload) user ts) = object [ "medium" .= medium
-                                                                    , "msg" .= msg
-                                                                    , "payload" .= payload
-                                                                    , "user" .= user
-                                                                    , "timestamp" .= ts
-                                                                    ]
-    toJSON (SinkMessage medium msg Nothing user ts)        = object [ "medium" .= medium
-                                                                    , "msg" .= msg
-                                                                    , "user" .= user
-                                                                    , "timestamp" .= ts
-                                                                    ]
+    toJSON (SinkMessage sink medium msg (Just payload) user ts) = object [ "sink" .= sink
+                                                                         , "medium" .= medium
+                                                                         , "msg" .= msg
+                                                                         , "payload" .= payload
+                                                                         , "user" .= user
+                                                                         , "timestamp" .= ts
+                                                                         ]
+    toJSON (SinkMessage sink medium msg Nothing user ts)        = object [ "sink" .= sink
+                                                                         , "medium" .= medium
+                                                                         , "msg" .= msg
+                                                                         , "user" .= user
+                                                                         , "timestamp" .= ts
+                                                                         ]

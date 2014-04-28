@@ -43,14 +43,16 @@ main = do
                 Nothing -> status status409
 
         -- |An endpoint that can be used for web-hooks.
-        post "/1/:medium/:user" $ do
+        post "/1/sink/:sink/:medium/:user" $ do
             mediumBytes <- param "medium"
             userBytes <- param "user"
+            sinkBytes <- param "sink"
             payload <- body
             let user = decodeUtf8 userBytes
+            let sink = decodeUtf8 sinkBytes
             let message = toStrict $ TLE.decodeUtf8 payload
             currentTime <- liftIO $ read <$> formatTime defaultTimeLocale "%s" <$> getCurrentTime
 
             case (toMedium mediumBytes) of
-                Just med -> liftIO $ writeChan workChannel (SinkMessage med message Nothing user currentTime)
+                Just med -> liftIO $ writeChan workChannel (SinkMessage sink med message Nothing user currentTime)
                 Nothing -> status status400
