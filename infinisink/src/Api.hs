@@ -24,6 +24,7 @@ import System.Locale (defaultTimeLocale)
 import Web.Scotty (body, middleware, param, post, scotty, status)
 
 -- Process messages as they appear on the queue
+processMsgLoop :: Chan SinkMessage -> IO ()
 processMsgLoop chan = forever $ do
     msg <- readChan chan
     putStrLn $ show msg
@@ -32,7 +33,7 @@ main :: IO()
 main = do
     scotty 3000 $ do
         workChannel <- lift newChan
-        lift . forkIO $ processMsgLoop workChannel
+        _ <- lift . forkIO $ processMsgLoop workChannel
         middleware logStdoutDev
 
         -- |Main endpoint for the sink. We expect a well-formatted JSON document.
@@ -43,14 +44,16 @@ main = do
                 Nothing -> status status409
 
         -- |An endpoint that can be used for web-hooks.
-        post "/1/:medium/:user" $ do
+        post "/1/:app/:medium/:user" $ do
+            appBytes <- param "app"
             mediumBytes <- param "medium"
             userBytes <- param "user"
             payload <- body
             let user = decodeUtf8 userBytes
+            let app = decodeUtf8 appBytes
             let message = toStrict $ TLE.decodeUtf8 payload
             currentTime <- liftIO $ read <$> formatTime defaultTimeLocale "%s" <$> getCurrentTime
 
             case (toMedium mediumBytes) of
-                Just med -> liftIO $ writeChan workChannel (SinkMessage med message Nothing user currentTime)
+                Just med -> liftIO $ writeChan workChannel (SinkMessage med message Nothing user currentTime app)
                 Nothing -> status status400

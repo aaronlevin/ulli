@@ -9,7 +9,7 @@ import Control.Applicative ((<*>), (<$>))
 import Control.Monad (mzero)
 import qualified Data.Aeson as A
 import Data.Aeson ((.:), (.:?), (.=), FromJSON, object, ToJSON, Value (Object))
-import Data.Maybe (Maybe)
+import Data.Maybe (catMaybes, Maybe)
 import Data.Text (Text)
 
 -- |The 'Medium' through which a message was received
@@ -55,12 +55,14 @@ toMedium _              = Nothing
 2. message: the actual 'message'
 3. payload: an optional payload of other data. Some mediums all for this, e.g. 'email'
 4. user: the user that sent the message
+5. app: the high-level application using infinisink service.
 -}
-data SinkMessage = SinkMessage { getMedium :: Medium
-                               , getMessage :: Text
-                               , getPayload :: Maybe Text
-                               , getUser :: Text
+data SinkMessage = SinkMessage { getMedium    :: Medium
+                               , getMessage   :: Text
+                               , getPayload   :: Maybe Text
+                               , getUser      :: Text
                                , getTimestamp :: Integer
+                               , getApp       :: Text
                                } deriving (Show, Eq, Ord)
 
 instance FromJSON SinkMessage where
@@ -69,18 +71,15 @@ instance FromJSON SinkMessage where
                             v .: "msg" <*>
                             v .:? "payload" <*>
                             v .: "user" <*>
-                            v .: "timestamp"
+                            v .: "timestamp" <*>
+                            v .: "app"
     parseJSON _          = mzero
 
 instance ToJSON SinkMessage where
-    toJSON (SinkMessage medium msg (Just payload) user ts) = object [ "medium" .= medium
-                                                                    , "msg" .= msg
-                                                                    , "payload" .= payload
-                                                                    , "user" .= user
-                                                                    , "timestamp" .= ts
-                                                                    ]
-    toJSON (SinkMessage medium msg Nothing user ts)        = object [ "medium" .= medium
-                                                                    , "msg" .= msg
-                                                                    , "user" .= user
-                                                                    , "timestamp" .= ts
-                                                                    ]
+  toJSON (SinkMessage medium msg payload user ts app) = object $ [ "medium" .= medium
+                                                                 , "msg" .= msg
+                                                                 , "user" .= user
+                                                                 , "timestamp" .= ts
+                                                                 , "app" .= app
+                                                                 ] ++ catMaybes
+                                                                 [ ("payload" .=) . A.String <$> payload ]
