@@ -62,25 +62,26 @@ executable infinisink-api
 
   -- Other library packages from which modules are imported.
   build-depends: base >=4.6 && <4.8
-               , scotty >=0.6
+               , aeson
                , blaze-html >=0.6
                , blaze-markup
                , blaze-builder
+               , bytestring >=0.10.0
+               , containers
                , http-types ==0.8.*
-               , resourcet
-               , text
                , mtl
+               , old-locale
+               , optparse-applicative
+               , resourcet
+               , scotty >=0.6
+               , text
+               , time
+               , transformers ==0.3.0.0
                , wai >=2.0.0
                , wai-extra
                , wai-middleware-static
-               , transformers ==0.3.0.0
-               , time
-               , containers
-               , aeson
                , uuid
-               , bytestring >=0.10.0
                , postgresql-simple
-               , old-locale
 
   -- Directories containing source files.
   hs-source-dirs: src

@@ -3,23 +3,22 @@
 module Main where
 
 import Control.Applicative ((<$>))
-import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.Chan (Chan, newChan, readChan, writeChan)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Data.Aeson (decode)
-import Data.ByteString.Lazy (fromStrict)
-import Data.Maybe (Maybe (Nothing, Just))
-import Data.Monoid (mconcat)
 import Data.Text.Lazy (toStrict)
 import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Text.Encoding (decodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format (formatTime)
-import InfiniSink.Types (Medium, SinkMessage (SinkMessage), toMedium)
+import InfiniSink.Config (infinisinkOpts)
+import InfiniSink.Types (SinkMessage (SinkMessage), toMedium)
 import Network.HTTP.Types (status400, status409)
 import Network.Wai.Middleware.RequestLogger
+import Options.Applicative (execParser)
 import System.Locale (defaultTimeLocale)
 import Web.Scotty (body, middleware, param, post, scotty, status)
 
@@ -31,6 +30,8 @@ processMsgLoop chan = forever $ do
 
 main :: IO()
 main = do
+    config <- execParser infinisinkOpts
+    putStrLn $ show config
     scotty 3000 $ do
         workChannel <- lift newChan
         _ <- lift . forkIO $ processMsgLoop workChannel
