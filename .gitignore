@@ -13,3 +13,4 @@ target
 .nrepl-port
 infinisink/dist/*
 infinisink/.cabal-sandbox/**
+infinisink/cabal.sandbox.config
