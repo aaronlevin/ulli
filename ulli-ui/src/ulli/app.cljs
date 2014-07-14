@@ -100,7 +100,6 @@
                 (om/update! item :text text))))))
     om/IRenderState
     (render-state [_ {:keys [item-update-chan]}]
-      (prn "rendering state")
       (dom/p #js {:id id
                   :contentEditable true
                   :onInput (fn [_]
@@ -125,7 +124,7 @@
                              :text (.-value new-field)
                              :completed false}]
           (om/transact! app :items
-                        #(conj % new-list-item)
+                        #(cons new-list-item %)
                         [:create new-list-item]))
         (set! (.-value new-field) "")))
     false))
@@ -161,9 +160,6 @@
                                                                     :onKeyDown #(handle-new-item-keydown % app owner)})))
                                  (apply dom/ul nil
                                         (map (fn [item] (dom/li nil
-                                                                (prn "in fn")
-                                                                (prn items)
-                                                                (prn item)
                                                                 (om/build ulli-item-view item owner))) items))))))))
 
 (om/root ulli-app app-state
