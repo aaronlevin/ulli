@@ -129,9 +129,8 @@
         (set! (.-value new-field) "")))
     false))
 
-;;(defn main [{:keys [title description items] :as app} comm]
- ;; (dom/section #js {:id "main" :style (hidden (empty? items))}
 
+;; Main ulli app. TODO: do something on the event-channel.
 (defn ulli-app [{:keys [description title items] :as app} owner]
   (reify
     om/IWillMount
