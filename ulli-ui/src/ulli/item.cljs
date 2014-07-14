@@ -1,6 +1,6 @@
-(ns todomvc.item
+(ns ulli.item
   (:require [cljs.core.async :refer [>! put!]]
-            [todomvc.utils :refer [now hidden]]
+            [ulli.utils :refer [now hidden]]
             [clojure.string :as string]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]))

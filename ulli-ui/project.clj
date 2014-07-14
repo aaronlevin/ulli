@@ -1,4 +1,4 @@
-(defproject todomvc "0.1.0-SNAPSHOT"
+(defproject ulli "0.1.0-SNAPSHOT"
   :description "ulli"
   :url "http://ulli.co"
 
