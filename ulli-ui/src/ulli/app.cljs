@@ -51,15 +51,13 @@
       (dom/h1
         #js {:contentEditable true
              :onInput (fn [_]
-                        (let [chan (om/get-state owner :update-title-chan)
-                              node (.-firstChild (om/get-node owner))]
+                        (let [node (.-firstChild (om/get-node owner))]
                           (when node
-                            (put! chan (.-nodeValue node)))))
+                            (put! update-title-chan (.-nodeValue node)))))
              :onBlur (fn [_]
-                       (let [chan (om/get-state owner :update-title-chan)
-                             node (.-firstChild (om/get-node owner))]
+                       (let [node (.-firstChild (om/get-node owner))]
                          (when node
-                           (put! chan (.-nodeValue node))))) } title))))
+                           (put! update-title-chan (.-nodeValue node))))) } title))))
 
 ;; =============================================================================
 ;; Ulli :: Description
@@ -80,21 +78,46 @@
       (dom/p
         #js {:contentEditable true
              :onInput (fn [_]
-                        (let [chan (om/get-state owner :update-description-chan)
-                              node (.-firstChild (om/get-node owner))]
+                        (let [node (.-firstChild (om/get-node owner))]
                           (when node
-                            (put! chan (.-nodeValue node)))))
+                            (put! update-description-chan (.-nodeValue node)))))
              :onBlur (fn [_]
-                       (let [chan (om/get-state owner :update-description-chan)
-                             node (.-firstChild (om/get-node owner))]
+                       (let [node (.-firstChild (om/get-node owner))]
                          (when node
-                           (put! chan (.-nodeValue node)))))
+                           (put! update-description-chan (.-nodeValue node)))))
              :className "lead"} description))))
+
+;; ============================================================================
+;; Ulli :: Item
+(defn ulli-item-view [{:keys [id text] :as item} owner]
+  (reify
+    om/IWillMount
+    (will-mount [_]
+      (let [item-update-chan (chan)]
+        (om/set-state! owner :item-update-chan item-update-chan)
+        (go (while true
+              (let [text (<! item-update-chan)]
+                (om/update! item :text text))))))
+    om/IRenderState
+    (render-state [_ {:keys [item-update-chan]}]
+      (prn "rendering state")
+      (dom/p #js {:id id
+                  :contentEditable true
+                  :onInput (fn [_]
+                             (let [node (.-firstChild (om/get-node owner))]
+                               (when node
+                                 (put! item-update-chan (.-nodeValue node)))))
+                  :onBlur (fn [_]
+                            (let [node (.-firstChild (om/get-node owner))]
+                              (when node
+                                (put! item-update-chan (.-nodeValue node)))))} text))))
+
+
 
 ;; =============================================================================
 ;; Main and Footer components
 
-(defn handle-new-todo-keydown [e app owner]
+(defn handle-new-item-keydown [e app owner]
   (when (== (.-which e) ENTER_KEY)
     (let [new-field (om/get-node owner "newListItem")]
       (when-not (string/blank? (.. new-field -value trim))
@@ -135,9 +158,13 @@
                                                                     :className "form-control"
                                                                     :id "list-item"
                                                                     :placeholder "xxx"
-                                                                    :onKeyDown #(handle-new-todo-keydown % app owner)})))
+                                                                    :onKeyDown #(handle-new-item-keydown % app owner)})))
                                  (apply dom/ul nil
-                                        (map (fn [text] (dom/li nil (:text text))) items))))))))
+                                        (map (fn [item] (dom/li nil
+                                                                (prn "in fn")
+                                                                (prn items)
+                                                                (prn item)
+                                                                (om/build ulli-item-view item owner))) items))))))))
 
 (om/root ulli-app app-state
          {:target (.getElementById js/document "main")})
