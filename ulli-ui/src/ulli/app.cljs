@@ -99,19 +99,24 @@
               (let [text (<! item-update-chan)]
                 (om/update! item :text text))))))
     om/IRenderState
-    (render-state [_ {:keys [item-update-chan]}]
-      (dom/p #js {:id id
-                  :contentEditable true
-                  :onInput (fn [_]
-                             (let [node (.-firstChild (om/get-node owner))]
-                               (when node
-                                 (put! item-update-chan (.-nodeValue node)))))
-                  :onBlur (fn [_]
-                            (let [node (.-firstChild (om/get-node owner))]
-                              (when node
-                                (put! item-update-chan (.-nodeValue node)))))} text))))
-
-
+    (render-state [_ {:keys [item-update-chan delete-channel]}]
+      (dom/div nil 
+               (dom/p #js {:id id
+                           :contentEditable true
+                           :onInput (fn [_]
+                                      (let [node (.-firstChild (om/get-node owner))]
+                                        (when node
+                                          (put! item-update-chan (.-nodeValue node)))))
+                           :onBlur (fn [_]
+                                     (let [node (.-firstChild (om/get-node owner))]
+                                       (when node
+                                         (put! item-update-chan (.-nodeValue node)))))} text)
+               (dom/button #js {:type "button"
+                                :className "close"
+                                :onClick (fn [e] (put! delete-channel item))
+                                }
+                               (dom/span #js {:aria-hidden "true"} "x")
+                               (dom/span #js {:className "sr-only"} "Close"))))))
 
 ;; =============================================================================
 ;; Main and Footer components
@@ -135,14 +140,21 @@
   (reify
     om/IWillMount
     (will-mount [_]
-      (let [event-channel (chan)]
-        (om/set-state! owner :event-chanel event-channel)
+      (let [event-channel (chan)
+            delete-channel (chan)]
+        (om/set-state! owner :event-channel event-channel)
+        (om/set-state! owner :delete-channel delete-channel)
         (go (while true
               (let [[type value] (<! event-channel)]
                 ;; handle-event goes here
-                (prn value))))))
+                (prn value))))
+        (go (while true
+              (let [item (<! delete-channel)]
+                (om/transact! app :items
+                              (fn [is] (vec (remove #(= item %) is))))
+                (prn item))))))
     om/IRenderState
-    (render-state [_ {:keys [event-channel]}]
+    (render-state [_ {:keys [event-channel delete-channel]}]
       (dom/div nil
                (dom/div #js {:className "jumbotron"}
                         (om/build ulli-title-view app owner)
@@ -155,11 +167,11 @@
                                                                     :type "text"
                                                                     :className "form-control"
                                                                     :id "list-item"
-                                                                    :placeholder "xxx"
+                                                                    :placeholder ""
                                                                     :onKeyDown #(handle-new-item-keydown % app owner)})))
-                                 (apply dom/ul nil
+                                 (apply dom/ul #js {:className "list-unstyled"}
                                         (map (fn [item] (dom/li nil
-                                                                (om/build ulli-item-view item owner))) items))))))))
+                                                                (om/build ulli-item-view item {:init-state {:delete-channel delete-channel}}))) items))))))))
 
 (om/root ulli-app app-state
          {:target (.getElementById js/document "main")})
