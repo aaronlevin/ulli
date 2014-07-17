@@ -21,20 +21,7 @@
                       :items [] }))
 
 ;; =============================================================================
-;; Routing
-
-(defroute "/" [] app-state)
-
-(def history (History.))
-
-(events/listen history EventType.NAVIGATE
-               (fn [e] (secretary/dispatch! (.-token e))))
-
-(.setEnabled history true)
-
-;; =============================================================================
-;; Ulli :: Title
-
+;; Ulli :: Title 
 (defn ulli-title-view [{:keys [title] :as app} owner]
   (reify
     om/IInitState
@@ -99,8 +86,11 @@
               (let [text (<! item-update-chan)]
                 (om/update! item :text text))))))
     om/IRenderState
-    (render-state [_ {:keys [item-update-chan delete-channel]}]
-      (dom/div nil 
+    (render-state [e {:keys [item-update-chan delete-channel]}]
+      (dom/div #js {:draggable true
+                    :onDragStart (fn [e]
+                                   (prn "drag start")
+                                   (prn (.. e js/dataTransfer js/dropEffect)))}
                (dom/p #js {:id id
                            :contentEditable true
                            :onInput (fn [_]
@@ -109,6 +99,8 @@
                                           (put! item-update-chan (.-nodeValue node)))))
                            :onBlur (fn [_]
                                      (let [node (.-firstChild (om/get-node owner))]
+                                       ;; TODO: very first blur event causes error
+                                       ;; why?
                                        (when node
                                          (put! item-update-chan (.-nodeValue node)))))} text)
                (dom/button #js {:type "button"
@@ -147,11 +139,13 @@
         (go (while true
               (let [[type value] (<! event-channel)]
                 ;; handle-event goes here
+                (prn "event-channel")
                 (prn value))))
         (go (while true
               (let [item (<! delete-channel)]
                 (om/transact! app :items
                               (fn [is] (vec (remove #(= item %) is))))
+                (prn "delete-channel")
                 (prn item))))))
     om/IRenderState
     (render-state [_ {:keys [event-channel delete-channel]}]
@@ -169,9 +163,30 @@
                                                                     :id "list-item"
                                                                     :placeholder ""
                                                                     :onKeyDown #(handle-new-item-keydown % app owner)})))
-                                 (apply dom/ul #js {:className "list-unstyled"}
+                                 (apply dom/ol nil
                                         (map (fn [item] (dom/li nil
                                                                 (om/build ulli-item-view item {:init-state {:delete-channel delete-channel}}))) items))))))))
 
-(om/root ulli-app app-state
-         {:target (.getElementById js/document "main")})
+;; =============================================================================
+;; Routing
+(def app-node 
+  (js/document.getElementById "main"))
+
+(defroute "/test" [] {:a "a" :b "b"}
+    (prn "in this")
+    (secretary/set-html! app-node "<h1>hello</h1>"))
+
+(defroute "/" [] app-state
+  (om/root ulli-app app-state
+           {:target (.getElementById js/document "main")}))
+
+
+(def history (History.))
+
+(events/listen history EventType.NAVIGATE
+               (fn [e] (secretary/dispatch! (.-token e))))
+
+(.setEnabled history true)
+
+
+
