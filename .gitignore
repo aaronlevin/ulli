@@ -14,5 +14,8 @@ target
 infinisink/dist/*
 infinisink/.cabal-sandbox/**
 infinisink/cabal.sandbox.config
+ulli-rest/dist/*
+ulli-rest/.cabal-sandbox/**
+ulli-rest/cabal.sandbox.config
 ulli-ui/bower_components/**
 ulli-ui/app.js
