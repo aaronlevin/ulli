@@ -18,8 +18,6 @@ import Data.Aeson ((.:), (.=), FromJSON(..), object, Result, ToJSON(..), Value(O
 import Data.Aeson.Types (parse, Parser)
 import Data.Functor()
 import Data.Vector (cons, empty, foldr', Vector)
-import Debug.Trace (trace)
--- import Data.Text (Text)
 
 -- | Algebra operations as basic data types for simple pattern matching
 data ListAlgOp = PushEdit
@@ -117,10 +115,10 @@ toJsonInterpreter = go empty where
 
 stringInterpreter :: Show a => Free (ListAlg a) () -> String
 stringInterpreter = go "" where
-  go str (Free (Push a n)) = go ("Push: " ++ (show a) ++ "\n" ++ str) n
-  go str (Free (Delete i n)) = go ("Delete: " ++ (show i) ++ "\n" ++ str) n
-  go str (Free (InsertAt i a n)) = go ("InsertAt[" ++ (show i) ++ "]: " ++ (show a) ++ "\n" ++ str) n
-  go str (Free (Set i a n)) = go ("Set[" ++ (show i) ++ "]: " ++ (show a) ++ "\n" ++ str) n
+  go str (Free (Push a n)) = go ("Push: " ++ show a ++ "\n" ++ str) n
+  go str (Free (Delete i n)) = go ("Delete[" ++ show i ++ "]\n" ++ str) n
+  go str (Free (InsertAt i a n)) = go ("InsertAt[" ++ show i ++ "]: " ++ show a ++ "\n" ++ str) n
+  go str (Free (Set i a n)) = go ("Set[" ++ show i ++ "]: " ++ show a ++ "\n" ++ str) n
   go str (Pure ()) = str
 
 fromJsonParser :: FromJSON a => Vector Value -> Parser (Free (ListAlg a) ())
