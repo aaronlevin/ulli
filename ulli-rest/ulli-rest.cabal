@@ -65,6 +65,7 @@ executable ulli-rest
                , aeson
                , free
                , text
+               , vector
 
   -- Directories containing source files.
   hs-source-dirs: src
