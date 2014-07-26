@@ -64,8 +64,9 @@ executable ulli-rest
   build-depends: base >=4.6 && <4.8
                , aeson
                , free
+               , mtl
                , text
-               , vector
+               , vector == 0.10.11.0
 
   -- Directories containing source files.
   hs-source-dirs: src

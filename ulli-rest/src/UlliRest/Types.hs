@@ -1,20 +1,24 @@
 {-# LANGUAGE OverloadedStrings, ExistentialQuantification #-}
 
 module UlliRest.Types ( delete
-  , fromJsonInterpreter
   , insertAt
+  , jsonToAlg
+  , ListAlg
   , listInterpreter
   , noop
   , push
   , set
+  , stringInterpreter
   , toJsonInterpreter) where
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Monad (mzero)
 import Control.Monad.Free (Free (Free, Pure))
-import Data.Aeson ((.:), (.=), FromJSON(..), object, ToJSON(..), Value(Object, String))
+import Data.Aeson ((.:), (.=), FromJSON(..), object, Result, ToJSON(..), Value(Object, String))
+import Data.Aeson.Types (parse, Parser)
 import Data.Functor()
-import Data.Vector (empty, cons, Vector)
+import Data.Vector (cons, empty, foldr', Vector)
+import Debug.Trace (trace)
 -- import Data.Text (Text)
 
 -- | Algebra operations as basic data types for simple pattern matching
@@ -41,23 +45,6 @@ data ListAlg a next = Push a next
                     | InsertAt Int a next
                     | Set Int a next
                     | Delete Int next
-
--- | We can serialize the List Algebra in two ways: a tree structure 
--- | or a list structure. The only difference is the tree structure has
--- | the next instruction in the JSON document, whereas the list structure
--- | implicitly has the next instruction behind it in a list. 
--- | therefore, we use two newtypes to give serialized versions of both these.
--- newtype ListAlgTree a next = ListAlgTree { unListAlgTree :: ListAlg a next }
-
-instance (FromJSON a, FromJSON next) => FromJSON (ListAlg a next) where
-  parseJSON (Object v) = (v .: "edit") >>= handleEdit where
-    handleEdit e = case e of
-      PushEdit      -> Push <$> v .: "value" <*> v .: "next"
-      InsertAtEdit  -> InsertAt <$> v .: "value" <*> v .: "index" <*> v .: "next"
-      SetEdit       -> Set <$> v .: "value" <*> v .: "index" <*> v .: "next"
-      DeleteEdit    -> Delete <$> v .: "index" <*> v .: "next"
-
-  parseJSON _ = mzero
 
 instance Functor (ListAlg a) where
   fmap f (Push a n) = Push a (f n)
@@ -128,5 +115,30 @@ toJsonInterpreter = go empty where
 
   go v (Pure ()) = v
 
-fromJsonInterpreter :: FromJSON a => Vector Value -> Free (ListAlg a) ()
-fromJsonInterpreter = error "cool"
+stringInterpreter :: Show a => Free (ListAlg a) () -> String
+stringInterpreter = go "" where
+  go str (Free (Push a n)) = go ("Push: " ++ (show a) ++ "\n" ++ str) n
+  go str (Free (Delete i n)) = go ("Delete: " ++ (show i) ++ "\n" ++ str) n
+  go str (Free (InsertAt i a n)) = go ("InsertAt[" ++ (show i) ++ "]: " ++ (show a) ++ "\n" ++ str) n
+  go str (Free (Set i a n)) = go ("Set[" ++ (show i) ++ "]: " ++ (show a) ++ "\n" ++ str) n
+  go str (Pure ()) = str
+
+fromJsonParser :: FromJSON a => Vector Value -> Parser (Free (ListAlg a) ())
+fromJsonParser = foldr' go (pure (Pure()))
+  where
+    -- we'll keep my desperate attempt at point style here. do notation is clearer. 
+    -- go (Object v) p = p >>= (\f -> (>>=) (v .: "edit" >>= handleEdit) (return . (flip (>>)) f))
+    go (Object v) p = do 
+      freeAlg <- p
+      editAlg <- (v .: "edit") >>= handleEdit
+      return (freeAlg >> editAlg)
+      where 
+        handleEdit e = case e of
+          PushEdit     -> push <$> (v .: "value")
+          InsertAtEdit -> insertAt <$> (v .: "index") <*> (v .: "value")
+          SetEdit      -> set <$> (v .: "index") <*> (v .: "value")
+          DeleteEdit   -> delete <$> (v .: "index")
+    go _ p = p
+
+jsonToAlg :: FromJSON a => Vector Value -> Result (Free (ListAlg a) ())
+jsonToAlg = parse fromJsonParser
