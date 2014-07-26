@@ -17,7 +17,7 @@ import Control.Monad.Free (Free (Free, Pure))
 import Data.Aeson ((.:), (.=), FromJSON(..), object, Result, ToJSON(..), Value(Object, String))
 import Data.Aeson.Types (parse, Parser)
 import Data.Functor()
-import Data.Vector (cons, empty, foldr', Vector)
+import Data.Vector (empty, foldr', snoc, Vector)
 
 -- | Algebra operations as basic data types for simple pattern matching
 data ListAlgOp = PushEdit
@@ -89,24 +89,24 @@ listInterpreter = go [] where
 
 toJsonInterpreter :: ToJSON a => Free (ListAlg a) () -> Vector Value
 toJsonInterpreter = go empty where
-  go v (Free (Push a n)) = go (cons json v) n where
+  go v (Free (Push a n)) = go (snoc v json) n where
     json = object [ "edit" .= PushEdit
                   , "value" .= a
                   ]
 
-  go v (Free (InsertAt i a n)) = go (cons json v) n where
+  go v (Free (InsertAt i a n)) = go (snoc v json) n where
     json = object [ "edit" .= InsertAtEdit
                   , "value" .= a
                   , "index" .= i
                   ]
 
-  go v (Free (Set i a n)) = go (cons json v) n where
+  go v (Free (Set i a n)) = go (snoc v json) n where
     json = object [ "edit" .= SetEdit
                   , "value" .= a
                   , "index" .= i
                   ]
 
-  go v (Free (Delete i n)) = go (cons json v) n where
+  go v (Free (Delete i n)) = go (snoc v json) n where
     json = object [ "edit" .= DeleteEdit
                   , "index" .= i
                   ]
@@ -114,12 +114,12 @@ toJsonInterpreter = go empty where
   go v (Pure ()) = v
 
 stringInterpreter :: Show a => Free (ListAlg a) () -> String
-stringInterpreter = go "" where
-  go str (Free (Push a n)) = go ("Push: " ++ show a ++ "\n" ++ str) n
-  go str (Free (Delete i n)) = go ("Delete[" ++ show i ++ "]\n" ++ str) n
-  go str (Free (InsertAt i a n)) = go ("InsertAt[" ++ show i ++ "]: " ++ show a ++ "\n" ++ str) n
-  go str (Free (Set i a n)) = go ("Set[" ++ show i ++ "]: " ++ show a ++ "\n" ++ str) n
-  go str (Pure ()) = str
+stringInterpreter = go [] where
+  go str (Free (Push a n)) = go (("Push: " ++ show a) : str) n
+  go str (Free (Delete i n)) = go (("Delete[" ++ show i ++ "]") : str) n
+  go str (Free (InsertAt i a n)) = go (("InsertAt[" ++ show i ++ "]: " ++ show a) : str) n
+  go str (Free (Set i a n)) = go (("Set[" ++ show i ++ "]: " ++ show a) : str) n
+  go str (Pure ()) = foldr (++) "" $ reverse $ map (++ "\n") str
 
 fromJsonParser :: FromJSON a => Vector Value -> Parser (Free (ListAlg a) ())
 fromJsonParser = foldr' go (pure (Pure()))
@@ -129,7 +129,7 @@ fromJsonParser = foldr' go (pure (Pure()))
     go (Object v) p = do 
       freeAlg <- p
       editAlg <- (v .: "edit") >>= handleEdit
-      return (freeAlg >> editAlg)
+      return (editAlg >> freeAlg)
       where 
         handleEdit e = case e of
           PushEdit     -> push <$> (v .: "value")

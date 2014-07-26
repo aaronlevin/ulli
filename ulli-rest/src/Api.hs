@@ -30,7 +30,6 @@ x = do
 
 main :: IO ()
 main = do
-  putStrLn "hellp"
   putStrLn $ show (listInterpreter x)
   putStrLn $ stringInterpreter x
   let jString = encode $ toJsonInterpreter x
