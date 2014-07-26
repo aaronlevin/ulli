@@ -1,8 +1,7 @@
 module Main where
 
-import Data.Aeson (encode, decode, Result (Error, Success), Value)
-import Control.Monad.Free (Free (Free))
-import Data.Vector (Vector)
+import Data.Aeson (encode, decode, Result (Error, Success))
+import Control.Monad.Free (Free ())
 import UlliRest.Types ( delete
                       --, insertAt
                       , jsonToAlg
@@ -15,22 +14,16 @@ import UlliRest.Types ( delete
 
 x :: Free (ListAlg Int) ()
 x = do
+  delete 4
   push 1
   push 2
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 3
-  push 2
-  push 3
+  push 4
+  push 5
+  push 6
+  push 7
+  push 8
+  push 9
+  push 10
   set 100 100
   set 1 99999999
 
@@ -42,7 +35,7 @@ main = do
   putStrLn $ stringInterpreter x
   let jString = encode $ toJsonInterpreter x
   putStrLn $ show $ jString
-  let jList = decode jString :: Maybe (Vector Value)
+  let jList = decode jString
   case jList of
     Nothing -> putStrLn "oops"
     Just jl -> case (jsonToAlg jl :: Result (Free (ListAlg Int) ())) of
