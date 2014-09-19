@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ExistentialQuantification #-}
+{-# LANGUAGE OverloadedStrings, ExistentialQuantification, Rank2Types, TypeOperators #-}
 
 module UlliRest.Types ( delete
   , insertAt
@@ -17,7 +17,27 @@ import Control.Monad.Free (Free (Free, Pure))
 import Data.Aeson ((.:), (.=), FromJSON(..), object, Result, ToJSON(..), Value(Object, String))
 import Data.Aeson.Types (parse, Parser)
 import Data.Functor()
+import Data.Functor.Coproduct (Coproduct(Coproduct), coproduct, getCoproduct, left, right)
 import Data.Vector (empty, foldr', snoc, Vector)
+
+data UlliAlgOp = UpdateTitle
+               | UpdateDescription
+
+instance ToJSON UlliAlgOp where
+  toJSON UpdateTitle = "up-title"
+  toJSON UpdateDescription = "up-desc"
+
+instance FromJSON UlliAlgOp where
+  parseJSON (String "up-title") = return UpdateTitle
+  parseJSON (String "up-desc")  = return UpdateDescription
+  parseJSON _                   = mzero
+
+data UlliAlg next = Title String next
+                  | Description String next
+
+instance Functor UlliAlg where
+  fmap f (Title s a) = Title s (f a)
+  fmap f (Description s a) = Description s (f a)
 
 -- | Algebra operations as basic data types for simple pattern matching
 data ListAlgOp = PushEdit
@@ -140,3 +160,80 @@ fromJsonParser = foldr' go (pure (Pure()))
 
 jsonToAlg :: FromJSON a => Vector Value -> Result (Free (ListAlg a) ())
 jsonToAlg = parse fromJsonParser
+
+newtype FullAlgebra a b = FullAlgebra { getAlgebra :: Coproduct (ListAlg a) UlliAlg b }
+
+instance Functor (FullAlgebra a) where
+  fmap f (FullAlgebra copro) = FullAlgebra $ fmap f copro
+
+push2 :: a -> Free (FullAlgebra a) ()
+push2 a = Free (FullAlgebra . left $ Push a (Pure ()))
+
+stringList :: (Show i) => ListAlg i a -> String
+stringList (Push i _) = show i
+stringList _ = ""
+
+ulliList :: UlliAlg a -> String
+ulliList (Title str _) = str
+ulliList (Description str _) = str
+
+--stringInterpreter2 :: Show a => Free (FullAlgebra a) () -> String
+--stringInterpreter2 = go []
+  --where go xs Free(FullAlgebra(Left(Push i n))) = 
+--stringInterpreter2 Free(FullAlgebra(Left(Push i n))) = 
+--stringInterpreter2 (Free x) = go [] fa 
+  --where go xs fa            = go' xs ((getCoproduct . getAlgebra) fa)
+        --go' xs (Left list)  = 
+
+type f :~> g = forall a. f a -> g a 
+infixr 0 :~>
+
+data X a = X a
+data Y a = Y a
+
+instance Functor X where
+  fmap f (X a) = X (f a)
+
+instance Functor Y where
+  fmap f (Y a) = Y (f a)
+
+foo :: X a -> Y a
+foo (X a) = Y a
+
+xy :: X :~> Y
+xy = foo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
